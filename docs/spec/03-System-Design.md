@@ -72,6 +72,7 @@ Behaviour:
 - Lazily create the `google-genai` client from `GEMINI_API_KEY`; if missing, raise `MODEL_UNAVAILABLE`.
 - Call `client.aio.models.generate_content` with the system instruction; fall back to prepending the system text if the API rejects system instructions.
 - Wrap each call in `asyncio.wait_for(..., MODEL_TIMEOUT_SECONDS)` → `MODEL_TIMEOUT` on expiry.
+- If the provider ends with `MAX_TOKENS` (including a response containing only thinking tokens), retry once with 2,048 additional output tokens, capped at 8,192. Do not retry with the repair prompt when the response was truncated.
 - Extract JSON: strip ``` fences, take the outermost `{...}`, `json.loads`.
 - If the parsed object is `{"error": "..."}` → `UNSUITABLE_INPUT`.
 - Validate with the Pydantic output model. On parse/validation failure → **one retry** with a repair line appended to the user message (`06-Prompt-Spec §8`). Still failing → `MODEL_OUTPUT_INVALID`.
@@ -103,7 +104,7 @@ Returns `{status:"ok", ai_configured, model, version}` instantly (no model call)
 
 ### 4.3 `api.js` contract
 ```
-apiRequest(path, body, {signal})        // POST, JSON, timeout 70 s, parses envelope
+apiRequest(path, body, {signal})        // POST, JSON, timeout 170 s, parses envelope
 explainTopic(payload)   -> { data, meta }
 summarizeNotes(payload) -> { data, meta }
 generateQuiz(payload)   -> { data, meta }

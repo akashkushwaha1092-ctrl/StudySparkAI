@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     inference_provider: str = "gemini_api"
     allowed_origins: str = "http://localhost:5173"
     rate_limit: str = "20/minute"
-    model_timeout_seconds: int = 30
+    model_timeout_seconds: int = 75
     log_level: str = "INFO"
     app_env: str = "development"
 

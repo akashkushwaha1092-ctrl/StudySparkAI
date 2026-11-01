@@ -45,7 +45,7 @@ Companion to `01-PRD.md`. Defines the constraints, technology choices and non-fu
 | ID | Area | Requirement |
 |---|---|---|
 | NFR-1 | Performance | Typical latency: Explain/Summarize ≤ 10 s, Quiz/Plan ≤ 15 s. Frontend shows progress immediately (< 100 ms) |
-| NFR-2 | Timeouts | Model call timeout 30 s, max 2 attempts; frontend request timeout 70 s |
+| NFR-2 | Timeouts | Model call timeout 75 s, max 2 attempts; frontend request timeout 170 s |
 | NFR-3 | Reliability | Malformed model output is retried once; upstream 429/503 retried once with short backoff |
 | NFR-4 | Availability | Backend cold start tolerated: frontend pings `/api/health` on load and shows a "waking up" banner after 3 s |
 | NFR-5 | Security | Key server-side only; CORS allow-list; rate limiting; input length limits; no `dangerouslySetInnerHTML` |

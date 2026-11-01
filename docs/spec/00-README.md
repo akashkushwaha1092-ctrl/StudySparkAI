@@ -44,7 +44,7 @@ This pack turns your architecture note into a spec-driven build: everything Anti
 | `INFERENCE_PROVIDER` | `gemini_api` | Only value implemented in the MVP |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | Comma-separated; add the Vercel URL in production |
 | `RATE_LIMIT` | `20/minute` | Per IP |
-| `MODEL_TIMEOUT_SECONDS` | `30` | Per model call |
+| `MODEL_TIMEOUT_SECONDS` | `75` | Per model call; truncated thinking responses get one larger-token retry |
 | `LOG_LEVEL` | `INFO` | |
 
 **`frontend/.env`** (public values only — anything `VITE_*` ships to the browser)

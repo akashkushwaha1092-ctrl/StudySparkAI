@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from unittest.mock import AsyncMock, MagicMock
 from httpx import AsyncClient, ASGITransport
 
-from main import app
+from main import app, validate_quiz_topic
 from config import Settings
 from gemma_service import get_gemma_service
 from schemas import (
@@ -194,6 +194,45 @@ async def test_quiz_endpoint_success_and_shuffle(mock_meta):
             # Verify correct_index accurately points to "CorrectAnswer" after shuffle
             c_idx = q["correct_index"]
             assert q["options"][c_idx] == "CorrectAnswer"
+
+        validation = mock_service.generate_json.call_args.kwargs["post_validate"]
+        validation(mock_output)
+        request_options = mock_service.generate_json.call_args.kwargs
+        assert request_options["temperature"] == 0.2
+        assert request_options["max_output_tokens"] == 2500
+        assert request_options["response_mime_type"] == "application/json"
+
+
+def test_quiz_topic_validation_rejects_unrelated_short_topic():
+    questions = [
+        RawQuizQuestion(
+            question="What is photosynthesis?",
+            options=["Plant process", "Laser", "Gravity", "Sound"],
+            correct_index=0,
+            explanation="Photosynthesis is how plants make food.",
+        )
+        for _ in range(5)
+    ]
+    output = QuizOutput(topic="Photosynthesis", questions=questions)
+
+    with pytest.raises(ValueError, match="does not match"):
+        validate_quiz_topic(output, "laser")
+
+
+def test_quiz_topic_validation_rejects_questions_missing_short_topic():
+    questions = [
+        RawQuizQuestion(
+            question="What is a coherent beam?",
+            options=["Light particle", "Focused ray", "Gravity", "Sound"],
+            correct_index=0,
+            explanation="It contains photons traveling in phase.",
+        )
+        for _ in range(5)
+    ]
+    output = QuizOutput(topic="Laser", questions=questions)
+
+    with pytest.raises(ValueError, match="does not cover"):
+        validate_quiz_topic(output, "laser")
 
 
 @pytest.mark.asyncio

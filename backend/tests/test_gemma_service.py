@@ -1,6 +1,8 @@
 import pytest
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+from types import SimpleNamespace
+from google.genai import types
 from gemma_service import extract_json, GemmaService
 from schemas import (
     AdaptiveQuizQuestionOutput,
@@ -100,6 +102,7 @@ async def test_gemma_service_successful_first_attempt():
         temperature=0.4,
         max_output_tokens=1200,
         language="en",
+        response_mime_type="application/json",
     )
 
     assert isinstance(result, ExplainOutput)
@@ -107,6 +110,8 @@ async def test_gemma_service_successful_first_attempt():
     assert meta.attempts == 1
     assert meta.language == "en"
     assert meta.latency_ms >= 0
+    config = mock_client.aio.models.generate_content.call_args.kwargs["config"]
+    assert config.response_mime_type == "application/json"
 
 
 @pytest.mark.asyncio
@@ -161,6 +166,70 @@ async def test_gemma_service_retry_on_invalid_output_success_second_try():
     # Verify second call received repair prompt
     second_call_user_prompt = mock_client.aio.models.generate_content.call_args_list[1].kwargs["contents"]
     assert "Your previous reply was not valid." in second_call_user_prompt
+
+
+@pytest.mark.asyncio
+async def test_gemma_service_retries_truncated_thinking_with_larger_token_budget():
+    truncated = MagicMock()
+    truncated.text = ""
+    truncated.candidates = [
+        SimpleNamespace(finish_reason=types.FinishReason.MAX_TOKENS)
+    ]
+    valid = MagicMock()
+    valid.text = """{
+        "title": "Laser",
+        "explanation": "A laser emits a narrow beam of light.",
+        "example": "A laser pointer produces a narrow beam.",
+        "key_points": ["Laser light is highly directional"],
+        "quick_recap": "A laser emits a narrow beam of light."
+    }"""
+    valid.candidates = [
+        SimpleNamespace(finish_reason=types.FinishReason.STOP)
+    ]
+    mock_client = MagicMock()
+    mock_client.aio.models.generate_content = AsyncMock(side_effect=[truncated, valid])
+    service = GemmaService(api_key="valid-mock-key", client=mock_client)
+
+    result, meta = await service.generate_json(
+        system="sys",
+        user="Explain lasers",
+        output_model=ExplainOutput,
+        temperature=0.4,
+        max_output_tokens=1200,
+    )
+
+    assert result.title == "Laser"
+    assert meta.attempts == 2
+    calls = mock_client.aio.models.generate_content.call_args_list
+    assert calls[0].kwargs["config"].max_output_tokens == 1200
+    assert calls[1].kwargs["config"].max_output_tokens == 1200 + 2048
+    assert calls[1].kwargs["contents"] == "Explain lasers"
+
+
+@pytest.mark.asyncio
+async def test_gemma_service_returns_safe_error_when_both_outputs_are_truncated():
+    truncated = MagicMock()
+    truncated.text = ""
+    truncated.candidates = [
+        SimpleNamespace(finish_reason=types.FinishReason.MAX_TOKENS)
+    ]
+    mock_client = MagicMock()
+    mock_client.aio.models.generate_content = AsyncMock(
+        side_effect=[truncated, truncated]
+    )
+    service = GemmaService(api_key="valid-mock-key", client=mock_client)
+
+    with pytest.raises(AppError) as exc_info:
+        await service.generate_json(
+            system="sys",
+            user="Generate a long answer",
+            output_model=ExplainOutput,
+            temperature=0.4,
+            max_output_tokens=1200,
+        )
+
+    assert exc_info.value.code == ErrorCode.MODEL_OUTPUT_INVALID
+    assert mock_client.aio.models.generate_content.await_count == 2
 
 
 @pytest.mark.asyncio

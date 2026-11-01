@@ -12,6 +12,12 @@ from prompts import build_repair_message
 logger = logging.getLogger("studyspark.gemma")
 
 T = TypeVar("T", bound=BaseModel)
+OUTPUT_TOKEN_RETRY_INCREMENT = 2048
+MAX_OUTPUT_TOKENS = 8192
+
+
+class _OutputTokenLimit(Exception):
+    pass
 
 
 def extract_json(raw_text: str) -> dict:
@@ -94,15 +100,31 @@ class GemmaService:
                 retryable=True,
             )
 
-    async def _call_model(self, system: str, user: str, temperature: float, max_output_tokens: int) -> str:
+    async def _call_model(
+        self,
+        system: str,
+        user: str,
+        temperature: float,
+        max_output_tokens: int,
+        response_mime_type: Optional[str] = None,
+    ) -> str:
         client = self._get_client()
         from google.genai import types
+
+        def response_text(response: Any) -> str:
+            if any(
+                candidate.finish_reason == types.FinishReason.MAX_TOKENS
+                for candidate in response.candidates or []
+            ):
+                raise _OutputTokenLimit()
+            return response.text or ""
 
         # Attempt call with system_instruction in config
         config = types.GenerateContentConfig(
             temperature=temperature,
             max_output_tokens=max_output_tokens,
             system_instruction=system,
+            response_mime_type=response_mime_type,
         )
 
         try:
@@ -114,7 +136,7 @@ class GemmaService:
                 ),
                 timeout=self.timeout_seconds,
             )
-            return response.text or ""
+            return response_text(response)
         except asyncio.TimeoutError:
             raise
         except Exception as e:
@@ -126,6 +148,7 @@ class GemmaService:
                 fallback_config = types.GenerateContentConfig(
                     temperature=temperature,
                     max_output_tokens=max_output_tokens,
+                    response_mime_type=response_mime_type,
                 )
                 response = await asyncio.wait_for(
                     client.aio.models.generate_content(
@@ -135,7 +158,7 @@ class GemmaService:
                     ),
                     timeout=self.timeout_seconds,
                 )
-                return response.text or ""
+                return response_text(response)
             raise
 
     async def generate_json(
@@ -148,6 +171,7 @@ class GemmaService:
         max_output_tokens: int,
         language: str = "en",
         post_validate: Optional[Callable[[T], None]] = None,
+        response_mime_type: Optional[str] = None,
     ) -> Tuple[T, ResponseMeta]:
         """
         Calls Gemma to generate structured JSON, validates against output_model,
@@ -168,7 +192,27 @@ class GemmaService:
                     user=current_user_prompt,
                     temperature=temperature,
                     max_output_tokens=max_output_tokens,
+                    response_mime_type=response_mime_type,
                 )
+            except _OutputTokenLimit:
+                next_token_limit = min(
+                    max_output_tokens + OUTPUT_TOKEN_RETRY_INCREMENT,
+                    MAX_OUTPUT_TOKENS,
+                )
+                if attempts >= max_attempts or next_token_limit == max_output_tokens:
+                    logger.warning("Gemma output reached its token limit after retry")
+                    raise AppError(
+                        code=ErrorCode.MODEL_OUTPUT_INVALID,
+                        message="We couldn't format that answer. Please try again.",
+                        retryable=True,
+                    )
+                logger.warning(
+                    "Gemma output reached its token limit (attempt=%s); retrying with a larger output budget",
+                    attempts,
+                )
+                max_output_tokens = next_token_limit
+                current_user_prompt = user
+                continue
             except asyncio.TimeoutError:
                 logger.warning(f"Gemma model call timed out after {self.timeout_seconds}s (attempt {attempts})")
                 raise AppError(

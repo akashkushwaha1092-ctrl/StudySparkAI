@@ -2,6 +2,7 @@ import logging
 import uuid
 import time
 import random
+import re
 from typing import Dict, Any, List
 from datetime import datetime, date, timedelta
 
@@ -269,6 +270,38 @@ def adaptive_session_id(session_nonce: str) -> str:
     return f"aq_{value.hex}"
 
 
+def validate_quiz_topic(output: QuizOutput, content: str) -> None:
+    if len(content) > 120:
+        return
+
+    ignored_words = {
+        "a", "an", "and", "about", "create", "explain", "for", "from",
+        "give", "make", "notes", "of", "on", "quiz", "study", "the",
+        "topic", "what", "with",
+    }
+
+    def terms(value: str) -> set[str]:
+        return {
+            word
+            for word in re.findall(r"[^\W_]+", value.casefold(), flags=re.UNICODE)
+            if word not in ignored_words
+        }
+
+    expected_terms = terms(content)
+    if not expected_terms:
+        return
+
+    if not expected_terms.intersection(terms(output.topic)):
+        raise ValueError("Quiz topic does not match the requested study topic")
+
+    if len(expected_terms) == 1:
+        term = next(iter(expected_terms))
+        for question in output.questions:
+            question_text = " ".join([question.question, question.explanation])
+            if term not in terms(question_text):
+                raise ValueError("Quiz question does not cover the requested study topic")
+
+
 def validate_adaptive_question(
     output: AdaptiveQuizQuestionOutput,
     content: str,
@@ -456,13 +489,18 @@ async def generate_quiz(
     )
 
     output: QuizOutput
+    def validate_output(value: QuizOutput) -> None:
+        validate_quiz_topic(value, payload.content)
+
     output, meta = await gemma.generate_json(
         system=system,
         user=user,
         output_model=QuizOutput,
-        temperature=0.5,
-        max_output_tokens=2000,
+        temperature=0.2,
+        max_output_tokens=2500,
         language=payload.language.value,
+        post_validate=validate_output,
+        response_mime_type="application/json",
     )
 
     # Post-processing per 05-API-Spec §6:

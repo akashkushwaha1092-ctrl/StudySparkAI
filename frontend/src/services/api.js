@@ -147,7 +147,7 @@ export async function apiRequest(endpoint, payload, fixtureKey = null) {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 70000); // 70s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 170000);
 
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
