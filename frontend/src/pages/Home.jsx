@@ -83,15 +83,17 @@ export default function Home({
 
           <div className="pt-2 flex flex-wrap gap-3">
             <button
+              type="button"
               onClick={() => setActiveTool('explain')}
-              className="px-5 py-2.5 rounded-xl bg-white text-indigo-950 font-bold text-xs sm:text-sm hover:bg-indigo-50 shadow-md transition flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-white text-indigo-950 font-bold text-xs sm:text-sm hover:bg-indigo-50 shadow-md transition flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950"
             >
               <span>{t('startExplain')}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
+              type="button"
               onClick={() => setActiveTool('plan')}
-              className="px-5 py-2.5 rounded-xl bg-white/15 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm backdrop-blur border border-white/20 transition cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-white/15 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm backdrop-blur border border-white/20 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950"
             >
               <span>{t('buildPlan')}</span>
             </button>

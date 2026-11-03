@@ -78,8 +78,9 @@ export default function StatusMessage({
         {onRetry && (
           <div className="pt-1 flex items-center gap-2">
             <button
+              type="button"
               onClick={onRetry}
-              className="inline-flex min-h-11 items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-sm transition"
+              className="inline-flex min-h-11 items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#181B24]"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               {t('tryAgain')}

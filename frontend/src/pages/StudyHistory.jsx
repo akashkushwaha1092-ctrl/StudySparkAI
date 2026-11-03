@@ -114,8 +114,9 @@ export default function StudyHistory({ onNavigateToTool }) {
 
           {history.length > 0 && !showClearConfirm && (
             <button
+              type="button"
               onClick={() => setShowClearConfirm(true)}
-              className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-semibold px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/60 transition flex items-center gap-1"
+              className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-semibold px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/60 transition flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#181B24]"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>{t('clearAll')}</span>
@@ -128,18 +129,20 @@ export default function StudyHistory({ onNavigateToTool }) {
                 {t('deleteItems', { count: history.length })}
               </span>
               <button
+                type="button"
                 onClick={() => {
                   clearHistory();
                   setShowClearConfirm(false);
                   setViewingItem(null);
                 }}
-                className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold px-2 py-0.5 rounded transition"
+                className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold px-2 py-0.5 rounded transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#181B24]"
               >
                 {t('deleteYes')}
               </button>
               <button
+                type="button"
                 onClick={() => setShowClearConfirm(false)}
-                className="text-xs text-gray-600 dark:text-gray-400 hover:underline"
+                className="text-xs text-gray-600 dark:text-gray-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#181B24]"
               >
                 {t('cancel')}
               </button>
@@ -202,8 +205,9 @@ export default function StudyHistory({ onNavigateToTool }) {
               )}
             </div>
             <button
+              type="button"
               onClick={() => setViewingItem(null)}
-              className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+              className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#181B24]"
               aria-label={t('closeView')}
             >
               <X className="w-5 h-5" />
@@ -324,19 +328,21 @@ export default function StudyHistory({ onNavigateToTool }) {
 
                 <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0 pt-2 sm:pt-0">
                   <button
+                    type="button"
                     onClick={() => setViewingItem(isViewing ? null : item)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#181B24]"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span>{isViewing ? t('hide') : t('open')}</span>
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => {
                       removeEntry(item.id);
                       if (viewingItem?.id === item.id) setViewingItem(null);
                     }}
-                    className="p-1.5 rounded-xl text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition"
+                    className="p-1.5 rounded-xl text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#181B24]"
                     title={t('deleteItem')}
                     aria-label={t('deleteItem')}
                   >
@@ -364,8 +370,9 @@ export default function StudyHistory({ onNavigateToTool }) {
           <div className="flex items-center justify-center gap-3 pt-2">
             {onNavigateToTool && (
               <button
+                type="button"
                 onClick={() => onNavigateToTool('explain')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#181B24]"
               >
                 <span>{t('startLearning')}</span>
               </button>
