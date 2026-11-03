@@ -1,18 +1,32 @@
-# StudySpark AI
+﻿# StudySpark AI
 
-> **Learn Smarter, Not Harder.**
+> Learn Smarter, Not Harder.
 
-StudySpark AI is an AI-powered study companion for turning a topic or class notes into useful study materials. It combines a Vite + React frontend with a FastAPI backend and Gemma 4 through the Gemini API.
+StudySpark AI is a student-focused AI study companion built with a Vite + React frontend, a FastAPI backend, and Gemma 4 via the Gemini API. It helps students turn a topic, a set of class notes, or a deadline into a clear explanation, a summary, a quiz, a study plan, or a personalized adaptive practice session.
 
-## Features
+## Why this project
 
-- **Explain a Topic** — clear explanations at beginner, intermediate, or advanced level.
-- **Summarize Notes** — concise summaries, key points, and key terms based on your notes.
-- **Generate Quiz** — five multiple-choice questions with answer explanations.
-- **Generate Study Plan** — a day-by-day plan based on subjects, available study time, and deadlines.
-- **Study History** — revisit saved results in your browser.
+StudySpark AI is designed to make studying more actionable without login flows, a database, or heavy infrastructure. The app keeps results in the browser with `localStorage`, uses the backend only for model-driven generation, and stays easy to demo locally.
 
-The interface supports English and Hindi AI responses, light and dark themes, and mock mode for trying the frontend without an API key.
+## Feature highlights
+
+- Explain a Topic — clear explanations tailored to beginner, intermediate, or advanced learners.
+- Summarize Notes — turn notes into a concise summary with key points and important terms.
+- Generate Quiz — create a five-question MCQ quiz with answer explanations.
+- Generate Study Plan — build a daily study plan based on subjects, time, and deadlines.
+- Adaptive Quiz — the flagship feature. It creates a personalized quiz session that changes difficulty after each answer, revisits weak concepts, and ends with a session summary instead of a fixed set of questions.
+
+### Adaptive Quiz (featured)
+
+The Adaptive Quiz is the smart revision loop in the app:
+
+- Starts from the selected difficulty and topic or notes.
+- Raises difficulty after correct answers and lowers it after mistakes.
+- Reuses targeted questions to reinforce weak concepts.
+- Tracks score, difficulty history, weak concepts, and completion reason.
+- Saves only a concise summary to history rather than raw question content or answers.
+
+This makes it ideal for self-testing and revision without forcing a one-size-fits-all quiz flow.
 
 ## Screenshots
 
@@ -22,37 +36,35 @@ The interface supports English and Hindi AI responses, light and dark themes, an
 
 ## Tech stack
 
-- Frontend: React 18, Vite, Tailwind CSS, React Router, and lucide-react
-- Backend: FastAPI, Pydantic v2, slowapi
-- AI: Gemma 4 via Google's `google-genai` SDK
-- Browser storage: `localStorage`; no account or application database
+- Frontend: React, Vite, Tailwind CSS, React Router, and lucide-react
+- Backend: FastAPI, Pydantic v2, and slowapi
+- AI: Gemma 4 through Google’s `google-genai` SDK
+- Storage: browser `localStorage` only; no accounts and no application database
 
 ## Architecture
 
 ```text
-┌─────────────────────────────────────┐
-│ Browser: Vite + React               │
-│ UI, language/theme, local history   │
-└──────────────────┬──────────────────┘
-                   │ HTTPS/JSON
-                   ▼
-┌─────────────────────────────────────┐
-│ FastAPI backend                     │
-│ validation, rate limit, CORS,        │
-│ provider error handling              │
-└──────────────────┬──────────────────┘
-                   │ backend-only key
-                   ▼
-┌─────────────────────────────────────┐
-│ Gemini API: configured Gemma model  │
-└─────────────────────────────────────┘
+Browser (Vite + React)
+  ├─ UI, theme, language, and local history
+  └─ Calls the backend through frontend/src/services/api.js
+          │
+          ▼
+FastAPI backend
+  ├─ request validation
+  ├─ rate limiting and CORS
+  ├─ prompt assembly
+  ├─ provider retries and error handling
+  └─ output validation and response envelopes
+          │
+          ▼
+Gemini API / Gemma 4
 ```
 
-## Run locally (Windows PowerShell)
+## Local setup
 
-Use two PowerShell terminals from the repository root.
+Use two terminals from the repository root.
 
-### 1. Start the backend
+### 1) Start the backend
 
 ```powershell
 cd backend
@@ -62,17 +74,15 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Set `GEMINI_API_KEY` in `backend\.env`, then start the API:
+Set `GEMINI_API_KEY` in `backend\.env`, then run:
 
 ```powershell
 uvicorn main:app --reload --port 8000
 ```
 
-The health endpoint is available at [http://localhost:8000/api/health](http://localhost:8000/api/health); interactive API docs are at [http://localhost:8000/docs](http://localhost:8000/docs).
+Open the health check at http://localhost:8000/api/health and the API docs at http://localhost:8000/docs.
 
-### 2. Start the frontend
-
-In the second terminal:
+### 2) Start the frontend
 
 ```powershell
 cd frontend
@@ -81,9 +91,9 @@ Copy-Item .env.example .env
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Open http://localhost:5173.
 
-The checked-in frontend environment template sets `VITE_USE_MOCKS=true`, so the UI uses sample responses without calling the backend. To use live AI responses, change it to `VITE_USE_MOCKS=false` in `frontend\.env` and set a valid `GEMINI_API_KEY` in `backend\.env`. Restart the Vite server after changing frontend environment variables.
+The default frontend env template uses mock data (`VITE_USE_MOCKS=true`), which is useful for UI demos and screenshots. To use live AI responses, set `VITE_USE_MOCKS=false` in `frontend/.env` and ensure `backend/.env` contains a valid `GEMINI_API_KEY`.
 
 ## Environment variables
 
@@ -91,110 +101,82 @@ The checked-in frontend environment template sets `VITE_USE_MOCKS=true`, so the 
 
 | Variable | Default | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | *(empty)* | Gemini API key; required for live model responses. |
-| `GEMMA_MODEL` | `gemma-4-26b-a4b-it` | Gemma model ID. |
-| `INFERENCE_PROVIDER` | `gemini_api` | Inference provider. |
-| `ALLOWED_ORIGINS` | `http://localhost:5173` | Comma-separated frontend origins allowed by CORS. |
-| `RATE_LIMIT` | `20/minute` | Per-client request limit. |
-| `MODEL_TIMEOUT_SECONDS` | `30` | Backend model-call timeout. |
-| `LOG_LEVEL` | `INFO` | Backend logging level. |
-| `APP_ENV` | `development` | Use `production` on the deployed backend to disable interactive API docs and enforce production CORS settings. |
+| `GEMINI_API_KEY` | empty | Gemini API key for live responses |
+| `GEMMA_MODEL` | `gemma-4-26b-a4b-it` | Gemma model ID |
+| `INFERENCE_PROVIDER` | `gemini_api` | AI provider |
+| `ALLOWED_ORIGINS` | `http://localhost:5173` | Frontend origins allowed by CORS |
+| `RATE_LIMIT` | `20/minute` | Request limit per client |
+| `MODEL_TIMEOUT_SECONDS` | `30` | Model call timeout |
+| `LOG_LEVEL` | `INFO` | Backend log level |
+| `APP_ENV` | `development` | Development or production mode |
 
 ### Frontend (`frontend/.env`)
 
 | Variable | Default | Description |
 |---|---|---|
-| `VITE_API_BASE_URL` | `http://localhost:8000` | Backend base URL. |
-| `VITE_USE_MOCKS` | `true` | Set to `false` to send requests to the backend. |
+| `VITE_API_BASE_URL` | `http://localhost:8000` | Backend URL |
+| `VITE_USE_MOCKS` | `true` | Toggle mock mode for the UI |
 
-**Keep `GEMINI_API_KEY` only in `backend/.env`.** Never put it in a `VITE_*` variable or frontend source; Vite variables are exposed to the browser. Do not commit `.env` files. Use the `.env.example` templates instead.
-
-## Deployment preparation
-
-The project is prepared for separate frontend and backend hosting; it has not been deployed.
-
-### Backend
-
-- Use `backend` as the service root and install with `pip install -r requirements.txt`.
-- Start from that directory with `uvicorn main:app --host 0.0.0.0 --port $PORT` (use the host's assigned port).
-- Configure `APP_ENV=production`, `GEMINI_API_KEY`, `GEMMA_MODEL`, and `ALLOWED_ORIGINS` in the host's secret/environment settings. Set `ALLOWED_ORIGINS` to the exact deployed frontend origin, including its scheme and without a path. Production rejects wildcard and localhost origins.
-- `GET /api/health` is the health-check path. A successful response and `ai_configured: true` confirm the API is responding and a non-empty key is configured; they do **not** prove the provider accepts the key or that inference succeeds.
-- Keep debug off and do not expose the API key through frontend configuration or logs.
-
-### Frontend
-
-- Use `frontend` as the service root, run `npm run build`, and publish `dist`.
-- Set the public build variable `VITE_API_BASE_URL` to the backend URL (no trailing slash). Set `VITE_USE_MOCKS=false`; mock fixtures are also disabled in production builds even if this variable is accidentally set to `true`.
-- The existing [frontend/vercel.json](./frontend/vercel.json) provides the SPA rewrite needed for client-side routes.
-
-### Release verification and troubleshooting
-
-1. Deploy neither service until hosting and publication are explicitly approved.
-2. After backend configuration, check `/api/health`, then make one manual feature request in English and Hindi. Real requests consume provider quota; automated tests use deterministic mocks.
-3. Configure the backend CORS allowlist with the exact deployed frontend origin and confirm the frontend can call the health endpoint.
-4. Run all four feature flows against the deployed URL on desktop and a phone. A health check only tests backend availability, not real model inference.
-5. If the UI reports the backend offline on local development, use `http://localhost:5173` and `http://localhost:8000` consistently, or add the exact alternate origin (such as `http://127.0.0.1:5173`) to development CORS settings.
-6. For `MODEL_UNAVAILABLE`, `MODEL_TIMEOUT`, or `MODEL_OUTPUT_INVALID`, check the configured model ID, provider status, key validity, quota, and backend logs. The API returns safe error envelopes and does not substitute mock output for failed live requests.
-
-## Tests and checks
-
-Run backend tests from the `backend` directory:
-
-```powershell
-python -m pytest
-```
-
-With the backend virtual environment activated, you can also check live English and Hindi model access (requires a valid key):
-
-```powershell
-python smoke_test.py
-```
-
-Build the frontend from the `frontend` directory:
-
-```powershell
-npm run build
-npm test
-```
+Important: keep `GEMINI_API_KEY` only in `backend/.env`. Never expose it in a frontend variable or source file.
 
 ## API overview
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| `GET` | `/api/health` | Backend and model configuration status |
+| `GET` | `/api/health` | Check backend and AI status |
 | `POST` | `/api/explain` | Explain a topic |
 | `POST` | `/api/summarize` | Summarize notes |
-| `POST` | `/api/quiz` | Generate a quiz |
+| `POST` | `/api/quiz` | Generate a fixed five-question quiz |
 | `POST` | `/api/study-plan` | Generate a study plan |
+| `POST` | `/api/adaptive-quiz/start` | Start an adaptive quiz session |
+| `POST` | `/api/adaptive-quiz/answer` | Submit an answer and continue the adaptive flow |
 
-AI endpoints return a consistent success or error envelope. The backend validates model output before returning it to the frontend.
+All AI responses follow the project envelope format: `{ ok, data, meta }` on success and `{ ok: false, error }` on failure.
 
 ## Project layout
 
 ```text
 StudySparkAI/
 ├── backend/
-│   ├── main.py                 # FastAPI app and API routes
-│   ├── config.py               # Environment settings
-│   ├── schemas.py              # Request and response models
-│   ├── prompts.py              # Prompts for the four study tools
-│   ├── gemma_service.py        # Model calls, parsing, validation, and retry
-│   ├── tests/                  # Backend test suite
-│   └── .env.example            # Backend environment template
+│   ├── main.py
+│   ├── schemas.py
+│   ├── prompts.py
+│   ├── gemma_service.py
+│   ├── requirements.txt
+│   └── .env.example
 ├── frontend/
 │   ├── src/
-│   │   ├── components/         # Feature panels and shared UI
-│   │   ├── context/            # Theme and language settings
-│   │   ├── hooks/              # Browser storage and history
-│   │   ├── pages/              # Home and study history
-│   │   └── services/           # Backend API client and mock fixtures
-│   ├── .env.example            # Frontend environment template
-│   └── package.json
-└── docs/spec/                  # Product, API, design, and test specifications
+│   ├── public/
+│   ├── package.json
+│   └── .env.example
+├── docs/
+│   └── spec/
+├── README.md
+├── .gitignore
+└── package-lock.json
 ```
 
-## Notes
+## Development notes
 
-- AI-generated study materials can be inaccurate; verify important facts.
-- Avoid entering personal or sensitive information. In live mode, submitted study content is sent to the configured model API.
-- Study history and settings are stored in the current browser's `localStorage`.
+- The frontend talks to the backend only through `frontend/src/services/api.js`.
+- Model output is validated and parsed before it is returned to the UI.
+- The app supports both English and Hindi responses, plus light and dark themes.
+- Mock mode is available for frontend-only demos and screenshot work.
+
+## Verification
+
+Run backend tests from the `backend` directory:
+
+```powershell
+cd backend
+python -m pytest
+```
+
+Build the frontend from the `frontend` directory:
+
+```powershell
+cd frontend
+npm run build
+```
+
+This project is a local MVP intended for demo and validation, and it should be reviewed before production deployment.
